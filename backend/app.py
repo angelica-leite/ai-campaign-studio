@@ -1,10 +1,22 @@
-import sqlite3
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from database import conectar_banco, criar_tabela
+from schemas import CampanhaResposta, NovaCampanha
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    criar_tabela()
+    yield
+
+
+app = FastAPI(
+    title="AI Campaign Studio",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,64 +25,33 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
-CAMINHO_BANCO = "campanhas.db"
-
-
-def criar_tabela():
-    conexao = sqlite3.connect(CAMINHO_BANCO)
-
-    try:
-        conexao.execute("""
-            CREATE TABLE IF NOT EXISTS campanhas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT NOT NULL,
-                prompt TEXT NOT NULL,
-                status TEXT NOT NULL
-            )
-        """)
-        conexao.commit()
-    finally:
-        conexao.close()
-
-
-criar_tabela()
-
-
-class NovaCampanha(BaseModel):
-    nome: str = Field(min_length=2)
-    prompt: str = Field(min_length=10)
-
 
 @app.get("/")
 def inicio():
     return {"mensagem": "Minha API está funcionando!"}
 
 
-@app.get("/campanhas")
+@app.get("/campanhas", response_model=list[CampanhaResposta])
 def listar_campanhas():
-    conexao = sqlite3.connect(CAMINHO_BANCO)
-    conexao.row_factory = sqlite3.Row
-
-    try:
+    with conectar_banco() as conexao:
         registros = conexao.execute(
             "SELECT id, nome, prompt, status FROM campanhas ORDER BY id DESC"
         ).fetchall()
 
         return [dict(registro) for registro in registros]
-    finally:
-        conexao.close()
 
 
-@app.post("/campanhas", status_code=201)
+@app.post(
+    "/campanhas",
+    status_code=201,
+    response_model=CampanhaResposta,
+)
 def criar_campanha(campanha: NovaCampanha):
-    conexao = sqlite3.connect(CAMINHO_BANCO)
-
-    try:
+    with conectar_banco() as conexao:
         cursor = conexao.execute(
             "INSERT INTO campanhas (nome, prompt, status) VALUES (?, ?, ?)",
             (campanha.nome, campanha.prompt, "rascunho"),
         )
-        conexao.commit()
 
         return {
             "id": cursor.lastrowid,
@@ -78,38 +59,33 @@ def criar_campanha(campanha: NovaCampanha):
             "prompt": campanha.prompt,
             "status": "rascunho",
         }
-    finally:
-        conexao.close()
 
 
-        @app.post("/campanhas/{campanha_id}/simular")
-        def simular_video(campanha_id: int):
-            conexao = sqlite3.connect(CAMINHO_BANCO)
-            conexao.row_factory = sqlite3.Row
+@app.post(
+    "/campanhas/{campanha_id}/simular",
+    response_model=CampanhaResposta,
+)
+def simular_video(campanha_id: int):
+    with conectar_banco() as conexao:
+        campanha = conexao.execute(
+            "SELECT * FROM campanhas WHERE id = ?",
+            (campanha_id,),
+        ).fetchone()
 
-            try:
-                campanha = conexao.execute(
-                    "SELECT * FROM campanhas WHERE id = ?",
-                    (campanha_id,),
-                ).fetchone()
-        
-                if campanha is None:
-                    raise HTTPException(
-                        status_code=404,
-                        detail="Campanha não encontrada",
-                    )
-        
-                conexao.execute(
-                    "UPDATE campanhas SET status = ? WHERE id = ?",
-                    ("simulado", campanha_id),
-                )
-                conexao.commit()
-        
-                campanha_atualizada = conexao.execute(
-                    "SELECT * FROM campanhas WHERE id = ?",
-                    (campanha_id,),
-                ).fetchone()
-        
-                return dict(campanha_atualizada)
-            finally:
-                conexao.close()
+        if campanha is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Campanha não encontrada",
+            )
+
+        conexao.execute(
+            "UPDATE campanhas SET status = ? WHERE id = ?",
+            ("simulado", campanha_id),
+        )
+
+        campanha_atualizada = conexao.execute(
+            "SELECT * FROM campanhas WHERE id = ?",
+            (campanha_id,),
+        ).fetchone()
+
+        return dict(campanha_atualizada)
