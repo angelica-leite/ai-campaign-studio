@@ -1,3 +1,4 @@
+import { CardCampanha } from "./CardCampanha";
 import type { Campanha } from "../types/campanha";
 
 type ListaCampanhasProps = {
@@ -7,11 +8,6 @@ type ListaCampanhasProps = {
   onSimular: (id: number) => Promise<void>;
 };
 
-const descricaoStatus: Record<Campanha["status"], string> = {
-  rascunho: "Rascunho",
-  simulado: "Simulação concluída",
-};
-
 export function ListaCampanhas({
   campanhas,
   carregando,
@@ -19,32 +15,32 @@ export function ListaCampanhas({
   onSimular,
 }: ListaCampanhasProps) {
   return (
-    <section aria-labelledby="titulo-campanhas">
+    <section
+      className="campaign-section"
+      aria-labelledby="titulo-campanhas"
+      aria-busy={carregando}
+    >
       <h2 id="titulo-campanhas">Minhas campanhas</h2>
 
-      {carregando && <p>Carregando campanhas...</p>}
+      {carregando && <p aria-live="polite">Carregando campanhas...</p>}
 
       {!carregando && campanhas.length === 0 && (
-        <p>Nenhuma campanha cadastrada.</p>
+        <div className="empty-state">
+          <p>Nenhuma campanha cadastrada.</p>
+          <p>Use o formulário acima para criar sua primeira campanha.</p>
+        </div>
       )}
 
       {!carregando && campanhas.length > 0 && (
-        <ul>
+        <ul className="campaign-list">
           {campanhas.map((campanha) => (
             <li key={campanha.id}>
-              <h3>{campanha.nome}</h3>
-              <p>{campanha.prompt}</p>
-              <p>Status: {descricaoStatus[campanha.status]}</p>
-
-              <button
-                type="button"
-                onClick={() => onSimular(campanha.id)}
-                disabled={
-                  idSimulando !== null || campanha.status === "simulado"
-                }
-              >
-                {idSimulando === campanha.id ? "Simulando..." : "Simular vídeo"}
-              </button>
+              <CardCampanha
+                campanha={campanha}
+                simulando={idSimulando === campanha.id}
+                simulacaoBloqueada={idSimulando !== null}
+                onSimular={onSimular}
+              />
             </li>
           ))}
         </ul>

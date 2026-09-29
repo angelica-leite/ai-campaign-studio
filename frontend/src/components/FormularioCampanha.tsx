@@ -43,11 +43,12 @@ export function FormularioCampanha({
   }
 
   return (
-    <section aria-labelledby="titulo-formulario">
+    <section className="card" aria-labelledby="titulo-formulario">
       <h2 id="titulo-formulario">Nova campanha</h2>
 
       <form onSubmit={enviarFormulario}>
-        <div>
+        <div className="form-field">
+          {" "}
           <label htmlFor="nome">Nome da campanha</label>
           <input
             id="nome"
@@ -58,19 +59,28 @@ export function FormularioCampanha({
             disabled={salvando}
           />
         </div>
-
-        <div>
+        <div className="form-field">
+          {" "}
           <label htmlFor="prompt">Descrição do vídeo</label>
           <textarea
             id="prompt"
+            aria-describedby="ajuda-prompt"
+            placeholder="Descreva o produto, o público e o estilo do vídeo."
             value={prompt}
             onChange={(evento) => setPrompt(evento.target.value)}
             minLength={10}
             required
             disabled={salvando}
           />
+          <p id="ajuda-prompt" className="helper-text">
+            Escreva pelo menos 10 caracteres.
+          </p>
         </div>
-        {erroValidacao && <p role="alert">{erroValidacao}</p>}
+        {erroValidacao && (
+          <p role="alert" className="error-message">
+            {erroValidacao}
+          </p>
+        )}{" "}
         <button type="submit" disabled={salvando}>
           {salvando ? "Salvando..." : "Criar campanha"}
         </button>

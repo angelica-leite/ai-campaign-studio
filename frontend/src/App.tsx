@@ -24,11 +24,17 @@ function App() {
 
       <FormularioCampanha salvando={salvando} onCadastrar={criarCampanha} />
 
-      {erroAcao && <p role="alert">{erroAcao}</p>}
+      {erroAcao && (
+        <p role="alert" className="error-message">
+          {erroAcao}
+        </p>
+      )}
 
       {erroCarregamento ? (
         <div>
-          <p role="alert">{erroCarregamento}</p>
+          <p role="alert" className="error-message">
+            {erroCarregamento}
+          </p>
 
           <button
             type="button"
