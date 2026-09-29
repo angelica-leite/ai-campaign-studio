@@ -12,14 +12,29 @@ export function FormularioCampanha({
 }: FormularioCampanhaProps) {
   const [nome, setNome] = useState("");
   const [prompt, setPrompt] = useState("");
+  const [erroValidacao, setErroValidacao] = useState("");
 
   async function enviarFormulario(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
 
-    const cadastrado = await onCadastrar({
+    const dados = {
       nome: nome.trim(),
       prompt: prompt.trim(),
-    });
+    };
+
+    if (dados.nome.length < 2) {
+      setErroValidacao("Informe um nome com pelo menos 2 caracteres.");
+      return;
+    }
+
+    if (dados.prompt.length < 10) {
+      setErroValidacao("Descreva o vídeo com pelo menos 10 caracteres.");
+      return;
+    }
+
+    setErroValidacao("");
+
+    const cadastrado = await onCadastrar(dados);
 
     if (cadastrado) {
       setNome("");
@@ -55,7 +70,7 @@ export function FormularioCampanha({
             disabled={salvando}
           />
         </div>
-
+        {erroValidacao && <p role="alert">{erroValidacao}</p>}
         <button type="submit" disabled={salvando}>
           {salvando ? "Salvando..." : "Criar campanha"}
         </button>
