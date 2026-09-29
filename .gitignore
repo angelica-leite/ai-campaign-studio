@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Banco local
+*.db
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Configurações locais
+.env
+.env.*
+!.env.example
