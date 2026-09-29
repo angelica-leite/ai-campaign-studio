@@ -1,11 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
-
-type Campanha = {
-  id: number;
-  nome: string;
-  prompt: string;
-  status: string;
-};
+import type { Campanha } from "./types/campanha";
+import {
+  cadastrarCampanha,
+  listarCampanhas,
+  simularVideoCampanha,
+} from "./services/campanhas";
 
 function App() {
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
@@ -25,7 +24,7 @@ function App() {
           throw new Error("Falha ao buscar campanhas");
         }
 
-        const dados: Campanha[] = await resposta.json();
+        const dados = await listarCampanhas();
         setCampanhas(dados);
       } catch {
         setErro("Erro ao buscar campanhas. Confira se a API está ligada.");
@@ -58,7 +57,10 @@ function App() {
         throw new Error("Falha ao criar campanha");
       }
 
-      const novaCampanha: Campanha = await resposta.json();
+      const novaCampanha = await cadastrarCampanha({
+        nome: nome.trim(),
+        prompt: prompt.trim(),
+      });
 
       setCampanhas((listaAtual) => [novaCampanha, ...listaAtual]);
       setNome("");
@@ -86,7 +88,7 @@ function App() {
         throw new Error("Falha ao simular vídeo");
       }
 
-      const campanhaAtualizada: Campanha = await resposta.json();
+      const campanhaAtualizada = await simularVideoCampanha(id);
 
       setCampanhas((listaAtual) =>
         listaAtual.map((campanha) =>
